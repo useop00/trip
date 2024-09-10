@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/layout1}">
+
+<head>
+    <title>Travel Page - Login</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .content {
+            text-align: center;
+            color: white;
+            padding: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            margin: 10% auto;
+            width: 40%;
+            border-radius: 10px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 1.5em;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .login-form input {
+            padding: 10px;
+            margin: 10px 0;
+            width: 80%;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+        }
+
+        .login-form button {
+            padding: 10px;
+            width: 80%;
+            border: none;
+            border-radius: 5px;
+            background-color: #007BFF;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-form button:hover {
+            background-color: #0056b3;
+        }
+
+        .login-form a {
+            color: black;
+            text-decoration: none;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .google-login {
+            background-color: #db4437;
+        }
+
+        .google-login:hover {
+            background-color: #c33d2e;
+        }
+    </style>
+</head>
+
+<body>
+<div layout:fragment="content">
+    <h1>Welcome to Your Travel Page</h1>
+    <p>Explore the best destinations and plan your perfect trip!</p>
+
+    <!-- 에러 메시지 출력 -->
+    <div class="error-message" th:if="${loginError}" th:text="${loginError}"></div>
+
+    <form class="login-form" th:action="@{/}" method="post">
+        <input type="text" name="userName" placeholder="아이디" required>
+        <input type="password" name="password" placeholder="비밀번호" required>
+        <button type="submit">로그인</button>
+        <a th:href="@{/signup}">회원가입</a>
+        <button type="button" class="google-login" onclick="window.location.href='/oauth2/authorization/google'">
+            구글 로그인
+        </button>
+    </form>
+
+</div>
+</body>
+</html>

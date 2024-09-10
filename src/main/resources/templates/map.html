@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Maps and Places Autocomplete</title>
+    <script>
+        let map, marker, infowindow, service;
+
+        async function init() {
+            await customElements.whenDefined('gmp-map');
+
+            map = document.querySelector('gmp-map');
+            marker = document.querySelector('gmp-advanced-marker');
+            infowindow = new google.maps.InfoWindow();
+            service = new google.maps.places.PlacesService(map.innerMap);
+
+            map.innerMap.setOptions({
+                mapTypeControl: false
+            });
+
+            const placePicker = document.querySelector('gmpx-place-picker');
+            placePicker.addEventListener('gmpx-placechange', () => {
+                const place = placePicker.value;
+
+                if (!place.location) {
+                    window.alert("No details available for input: '" + place.name + "'");
+                    infowindow.close();
+                    marker.position = null;
+                    return;
+                }
+
+                if (place.viewport) {
+                    map.innerMap.fitBounds(place.viewport);
+                } else {
+                    map.center = place.location;
+                    map.zoom = 17;
+                }
+
+                marker.position = place.location;
+                infowindow.setContent(`<strong>${place.displayName}</strong><br><span>${place.formattedAddress}</span>`);
+                infowindow.open(map.innerMap, marker);
+
+                searchNearbyPlaces(place.location, 'tourist_attraction');
+            });
+        }
+
+        function searchNearbyPlaces(location, placeType) {
+            const request = {
+                location: location,
+                radius: '5000', // 5km 반경
+                type: [placeType],
+                keyword: placeType === 'restaurant' ? '-hotel' : '' // 호텔 제외
+            };
+
+            service.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    results.sort((a, b) => (b.user_ratings_total || 0) - (a.user_ratings_total || 0));
+
+                    const list = document.getElementById('places-list');
+                    list.innerHTML = ''; // 이전 결과 지우기
+
+                    results.forEach((result) => {
+                        const li = document.createElement('li');
+                        let placeImage = '';
+
+                        if (result.photos && result.photos.length > 0) {
+                            placeImage = `<img src="${result.photos[0].getUrl({maxWidth: 150, maxHeight: 150})}" alt="${result.name}">`;
+                        }
+
+                        li.innerHTML = `
+                            ${placeImage}
+                            <div class="place-details">
+                                <strong><a href="https://www.google.com/search?q=${encodeURIComponent(result.name)}" target="_blank">${result.name}</a></strong>
+                                <span class="rating">리뷰 수: ${result.user_ratings_total || 0}</span>
+                            </div>
+                        `;
+
+                        li.addEventListener('click', () => {
+                            map.center = result.geometry.location;
+                            map.zoom = 17;
+                            marker.position = result.geometry.location;
+                            infowindow.setContent(`<strong>${result.name}</strong><br><span>${result.vicinity}</span>`);
+                            infowindow.open(map.innerMap, marker);
+                        });
+
+                        list.appendChild(li);
+                    });
+                }
+            });
+        }
+
+        function changePlaceType(type) {
+            const place = marker.position;
+            if (!place) return;
+            searchNearbyPlaces(place, type);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+    <script type="module" src="https://unpkg.com/@googlemaps/extended-component-library@0.6"></script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: Arial, sans-serif;
+            display: flex;
+        }
+
+        #info-panel {
+            width: 20%;
+            background-color: #f5f5f5;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #places-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        #places-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        #places-list img {
+            margin-right: 10px;
+            border-radius: 5px;
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+        }
+
+        .place-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .rating {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        #places-list a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        #places-list a:hover {
+            text-decoration: underline;
+        }
+
+        gmp-map {
+            width: 80%;
+            height: 100%;
+        }
+
+        .place-picker-container {
+            padding: 10px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            border-radius: 5px;
+            width: 400px;
+        }
+
+        .category-buttons {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .category-buttons button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .category-buttons .active {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .logout-button {
+            background-color: #ff4d4d;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            margin-top: 20px;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .logout-button:hover {
+            background-color: #cc0000;
+        }
+    </style>
+</head>
+<body>
+<div id="info-panel">
+    <div class="place-picker-container">
+        <gmpx-place-picker placeholder="Enter an address"></gmpx-place-picker>
+    </div>
+
+    <div class="category-buttons">
+        <button class="active" onclick="changePlaceType('tourist_attraction')">추천 장소</button>
+        <button onclick="changePlaceType('tourist_attraction')">관광지</button>
+        <button onclick="changePlaceType('restaurant')">식당</button>
+        <button onclick="changePlaceType('cafe')">카페</button>
+    </div>
+
+    <ul id="places-list">
+    </ul>
+    <button class="logout-button" onclick="window.location.href='/logout'">로그아웃</button>
+</div>
+
+<gmpx-api-loader key="AIzaSyBSrmV4v2IuA2pXwJ6x7IBg80zUEZAxMUc" solution-channel="GMP_GE_mapsandplacesautocomplete_v1">
+</gmpx-api-loader>
+<gmp-map center="40.749933,-73.98633" zoom="13" map-id="DEMO_MAP_ID">
+    <gmp-advanced-marker></gmp-advanced-marker>
+</gmp-map>
+</body>
+</html>
