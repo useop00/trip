@@ -17,7 +17,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests((auth) -> auth
                         // 인가 동작 순서 : 위에서 부터 아래로 순서대로 ! 따라서 순서 유의 (anyRequest 특히)
-                        .requestMatchers("/**","/oauth2/**","/signup/**","/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/**","/oauth2/**","/signup/**","/css/**", "/js/**", "/images/**","/mail/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

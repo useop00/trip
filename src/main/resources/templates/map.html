@@ -4,6 +4,8 @@
     <title>Maps and Places Autocomplete</title>
     <script>
         let map, marker, infowindow, service;
+        let selectedPlaces = []; // 선택된 장소 배열
+        let markers = []; // 지도에 표시된 마커 배열
 
         async function init() {
             await customElements.whenDefined('gmp-map');
@@ -46,9 +48,10 @@
         function searchNearbyPlaces(location, placeType) {
             const request = {
                 location: location,
-                radius: '5000', // 5km 반경
+                radius: '5000',
                 type: [placeType],
-                keyword: placeType === 'restaurant' ? '-hotel' : '' // 호텔 제외
+                keyword: placeType === 'restaurant' ? '맛집' : '',
+                language: 'ko' // 한국어로 설정
             };
 
             service.nearbySearch(request, (results, status) => {
@@ -58,7 +61,7 @@
                     const list = document.getElementById('places-list');
                     list.innerHTML = ''; // 이전 결과 지우기
 
-                    results.forEach((result) => {
+                    results.forEach((result, index) => {
                         const li = document.createElement('li');
                         let placeImage = '';
 
@@ -69,23 +72,89 @@
                         li.innerHTML = `
                             ${placeImage}
                             <div class="place-details">
-                                <strong><a href="https://www.google.com/search?q=${encodeURIComponent(result.name)}" target="_blank">${result.name}</a></strong>
+                                <strong>${result.name}</strong>
                                 <span class="rating">리뷰 수: ${result.user_ratings_total || 0}</span>
                             </div>
+                            <button class="add-btn" data-place-name="${result.name}" data-lat="${result.geometry.location.lat()}" data-lng="${result.geometry.location.lng()}">+</button>
                         `;
 
                         li.addEventListener('click', () => {
-                            map.center = result.geometry.location;
-                            map.zoom = 17;
                             marker.position = result.geometry.location;
                             infowindow.setContent(`<strong>${result.name}</strong><br><span>${result.vicinity}</span>`);
                             infowindow.open(map.innerMap, marker);
                         });
-
                         list.appendChild(li);
+                    });
+
+                    // "+" 버튼 클릭 이벤트
+                    document.querySelectorAll('.add-btn').forEach(button => {
+                        button.addEventListener('click', function () {
+                            const placeName = this.getAttribute('data-place-name');
+                            const lat = parseFloat(this.getAttribute('data-lat'));
+                            const lng = parseFloat(this.getAttribute('data-lng'));
+
+                            if (!selectedPlaces.some(p => p.placeName === placeName)) {
+                                selectedPlaces.push({ placeName, lat, lng });
+                                updateSelectedPlaces();
+                                updateMarkers();
+                            }
+                        });
                     });
                 }
             });
+        }
+
+        function updateSelectedPlaces() {
+            const selectedPlacesPanel = document.getElementById('selected-places');
+            selectedPlacesPanel.innerHTML = ''; // 기존 패널 내용 초기화
+
+            selectedPlaces.forEach((place, index) => {
+                const div = document.createElement('div');
+                div.classList.add('selected-place');
+                div.innerHTML = `
+                    <span>${index + 1}. ${place.placeName}</span>
+                    <button class="remove-btn" data-index="${index}">X</button>
+                `;
+                selectedPlacesPanel.appendChild(div);
+            });
+
+            // 선택한 장소 패널에 "X" 버튼 클릭 시 삭제 이벤트
+            document.querySelectorAll('.remove-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    selectedPlaces.splice(index, 1); // 선택한 장소 배열에서 삭제
+                    updateSelectedPlaces(); // 패널 업데이트
+                    updateMarkers(); // 마커 업데이트
+                });
+            });
+        }
+
+        function updateMarkers() {
+            // 모든 마커를 제거하고, 선택한 장소에 대해 마커 추가
+            markers.forEach(marker => marker.setMap(null)); // 지도에서 모든 마커 제거
+            markers = []; // 마커 배열 초기화
+
+            selectedPlaces.forEach((place, index) => {
+                const markerLabel = (index + 1).toString();
+                const marker = new google.maps.Marker({
+                    position: { lat: place.lat, lng: place.lng },
+                    label: markerLabel,
+                    map: map.innerMap
+                });
+
+                markers.push(marker); // 마커 배열에 추가
+
+                marker.addListener('click', () => {
+                    infowindow.setContent(`<strong>${place.placeName}</strong>`);
+                    infowindow.open(map.innerMap, marker);
+                });
+            });
+        }
+
+        function resetSelectedPlaces() {
+            selectedPlaces = [];
+            updateSelectedPlaces();
+            updateMarkers(); // 마커도 함께 지워짐
         }
 
         function changePlaceType(type) {
@@ -118,14 +187,14 @@
             justify-content: space-between;
         }
 
-        #places-list {
+        #places-list, #selected-places {
             list-style: none;
             padding: 0;
             margin: 0;
             flex-grow: 1;
         }
 
-        #places-list li {
+        #places-list li, #selected-places li {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
@@ -144,6 +213,20 @@
         .place-details {
             display: flex;
             flex-direction: column;
+            margin-right: auto;
+        }
+
+        .add-btn {
+            padding: 5px 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .add-btn:hover {
+            background-color: #0056b3;
         }
 
         .rating {
@@ -152,17 +235,8 @@
             margin-top: 5px;
         }
 
-        #places-list a {
-            color: #007BFF;
-            text-decoration: none;
-        }
-
-        #places-list a:hover {
-            text-decoration: underline;
-        }
-
         gmp-map {
-            width: 80%;
+            width: 100%;
             height: 100%;
         }
 
@@ -212,12 +286,58 @@
         .logout-button:hover {
             background-color: #cc0000;
         }
+
+        #selected-panel {
+            width: 15%; /* 선택한 장소 패널 가로 크기 축소 */
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .reset-button {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .reset-button:hover {
+            background-color: #cc0000;
+        }
+
+        .remove-btn {
+            padding: 5px;
+            margin-left: auto;
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .remove-btn:hover {
+            background-color: #cc0000;
+        }
+
+        .selected-place {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 <div id="info-panel">
     <div class="place-picker-container">
-        <gmpx-place-picker placeholder="Enter an address"></gmpx-place-picker>
+        <gmpx-place-picker placeholder="주소를 입력하세요"></gmpx-place-picker>
     </div>
 
     <div class="category-buttons">
@@ -227,9 +347,14 @@
         <button onclick="changePlaceType('cafe')">카페</button>
     </div>
 
-    <ul id="places-list">
-    </ul>
+    <ul id="places-list"></ul>
     <button class="logout-button" onclick="window.location.href='/logout'">로그아웃</button>
+</div>
+
+<div id="selected-panel">
+    <h3>선택한 장소</h3>
+    <ul id="selected-places"></ul>
+    <button class="reset-button" onclick="resetSelectedPlaces()">초기화</button>
 </div>
 
 <gmpx-api-loader key="AIzaSyBSrmV4v2IuA2pXwJ6x7IBg80zUEZAxMUc" solution-channel="GMP_GE_mapsandplacesautocomplete_v1">

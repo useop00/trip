@@ -13,10 +13,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserEntity create(String userName, String email,String password) {
+    public UserEntity create(String userName, String mail,String password) {
         UserEntity user = new UserEntity();
         user.setUserName(userName);
-        user.setEmail(email);
+        user.setMail(mail);
         user.setPassword(passwordEncoder.encode(password));
         this.userRepository.save(user);
 

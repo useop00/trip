@@ -16,7 +16,7 @@ public class SignupController {
     private final UserService userService;
 
     @GetMapping("/signup")
-    public String login() {
+    public String login(UserCreateDto userCreateDto) {
         return "signup";
     }
 
@@ -31,7 +31,7 @@ public class SignupController {
             return "signup";
         }
 
-        userService.create(userCreateDto.getUserName(), userCreateDto.getEmail(), userCreateDto.getPassword());
+        userService.create(userCreateDto.getUserName(), userCreateDto.getMail(), userCreateDto.getPassword());
         return "redirect:/";
     }
 }

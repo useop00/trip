@@ -23,5 +23,5 @@ public class UserCreateDto {
 
     @NotEmpty(message = "이메일은 필수 항목입니다.")
     @Email
-    private String email;
+    private String mail;
 }
