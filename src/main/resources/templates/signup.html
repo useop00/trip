@@ -1,50 +1,152 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layouts/layout1}">
+<html>
 
-<div layout:fragment="content" class="container my-3">
-    <div class="my-3 border-bottom">
-        <div>
-            <h4>회원 가입</h4>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script type="text/javascript">
+    function sendNumber(){
+        $("#mail_number").css("display","block");
+        $.ajax({
+            url:"/mail",
+            type:"post",
+            dataType:"json",
+            data:{"mail" : $("#mail").val()},
+            success: function(data){
+                alert("인증번호 발송");
+                $("#Confirm").attr("value",data);
+            }
+        });
+    }
+
+    function confirmNumber() {
+        var number1 = $("#number").val();
+        var number2 = $("#Confirm").val();
+
+        if (number1 == number2) {
+            alert("이메일 인증이 완료되었습니다.");
+            $("#signupBtn").prop("disabled", false);  // 회원가입 버튼 활성화
+        } else {
+            alert("인증번호가 올바르지 않습니다.");
+        }
+    }
+</script>
+<body>
+
+<div class="container">
+    <h2>회원가입</h2>
+    <form th:action="@{/signup}" th:object="${userCreateDto}" method="post" id="signupForm">
+        <!-- 사용자 ID -->
+        <div class="form-group">
+            <label for="userName">사용자 ID</label>
+            <input type="text" th:field="*{userName}" class="form-control" id="userName" placeholder="사용자 ID">
+            <div th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}" class="text-danger"></div>
         </div>
-    </div>
-    <form th:action="@{/signup}" th:object="${userCreateDto}" method="post">
-        <div class="mb-3">
-            <label for="userName" class="form-label">사용자 ID</label>
-            <input type="text" th:field="*{userName}" class="form-control">
+
+        <!-- 비밀번호 -->
+        <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="password" th:field="*{password}" class="form-control" id="password" placeholder="비밀번호">
+            <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="text-danger"></div>
         </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">비밀번호</label>
-            <input type="password" th:field="*{password}" class="form-control">
+
+        <!-- 비밀번호 확인 -->
+        <div class="form-group">
+            <label for="passwordConfirm">비밀번호 확인</label>
+            <input type="password" th:field="*{passwordConfirm}" class="form-control" id="passwordConfirm" placeholder="비밀번호 확인">
+            <div th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}" class="text-danger"></div>
         </div>
-        <div class="mb-3">
-            <label for="passwordConfirm" class="form-label">비밀번호 확인</label>
-            <input type="password" th:field="*{passwordConfirm}" class="form-control">
+
+        <!-- 이메일 -->
+        <div class="form-group">
+            <label for="mail">이메일</label>
+            <input type="email" name="mail" id="mail" placeholder="이메일 입력">
         </div>
-        <div class="mb-3">
-            <label for="email" class="form-label">이메일</label>
-            <input type="email" th:field="*{email}" class="form-control">
+
+        <!-- 인증번호 보내기 버튼 -->
+        <button type="button" class="btn btn-primary" id="sendBtn" onclick="sendNumber()">인증번호 보내기</button>
+
+        <!-- 인증번호 입력란 -->
+        <div id="mail_number" name="mail_number" style="display: none;">
+            <input type="text" name="number" id="number" placeholder="인증번호 입력">
+            <button type="button" class="btn btn-primary" id="confirmBtn" onclick="confirmNumber()">이메일 인증</button>
         </div>
-        <button type="submit" class="btn btn-primary">회원 가입</button>
+        <input type="text" id="Confirm" name="Confirm" style="display: none" value="">
+
+        <!-- 회원가입 버튼 -->
+        <button type="submit" class="btn btn-success" id="signupBtn" disabled>회원 가입</button>
     </form>
-
 </div>
+</body>
 </html>
+
 <style>
-
-    body, html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
+    body {
+        background-image: url('/image/1.jpg');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        font-family: Arial, sans-serif;
+        color: white;
     }
 
-    h1 {
-        font-size: 3em;
+    .container {
+        background-color: rgba(0, 0, 0, 0.7);
+        border-radius: 15px;
+        padding: 20px;
+        max-width: 500px;
+        margin: 50px auto;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    h2 {
+        text-align: center;
         margin-bottom: 20px;
+        font-size: 1.8em;
     }
 
-    p {
-        font-size: 1.5em;
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    label {
+        font-size: 1.1em;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border-radius: 5px;
+        border: none;
+        font-size: 1em;
+    }
+
+    button {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1em;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .btn:disabled {
+        background-color: #ccc;
+        color: #666;
+    }
+
+    #mail_number {
+        margin-top: 10px;
     }
 </style>
