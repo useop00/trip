@@ -13,9 +13,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserEntity create(String userName, String mail,String password) {
+    public UserEntity create(String username, String mail,String password) {
         UserEntity user = new UserEntity();
-        user.setUserName(userName);
+        user.setUsername(username);
         user.setMail(mail);
         user.setPassword(passwordEncoder.encode(password));
         this.userRepository.save(user);
@@ -23,11 +23,15 @@ public class UserService {
         return user;
     }
 
-    public boolean validateUser(String userName, String password) {
-        UserEntity user = userRepository.findByUserName(userName);
+    public boolean validateUser(String username, String password) {
+        UserEntity user = userRepository.findByUsername(username);
         if (user != null) {
             return passwordEncoder.matches(password, user.getPassword());
         }
         return false;
+    }
+
+    public boolean isUserNameAvailable(String username) {
+        return userRepository.findByUsername(username) == null;
     }
 }
