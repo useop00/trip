@@ -15,7 +15,7 @@ public class MainController {
     private final UserService userService;
 
     @PostMapping("/")
-    public String login(@RequestParam("userName") String username,
+    public String login(@RequestParam("username") String username,
                         @RequestParam("password") String password,
                         Model model) {
 

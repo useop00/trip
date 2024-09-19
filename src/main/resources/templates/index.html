@@ -68,14 +68,6 @@
             margin-top: 10px;
             display: inline-block;
         }
-
-        .google-login {
-            background-color: #db4437;
-        }
-
-        .google-login:hover {
-            background-color: #c33d2e;
-        }
     </style>
 </head>
 
@@ -88,10 +80,10 @@
     <div class="error-message" th:if="${loginError}" th:text="${loginError}"></div>
 
     <form class="login-form" th:action="@{/}" method="post">
-        <input type="text" name="userName" placeholder="아이디" required>
+        <input type="text" name="username" placeholder="아이디" required>
         <input type="password" name="password" placeholder="비밀번호" required>
         <button type="submit">로그인</button>
-        <a th:href="@{/signup}">회원가입</a>
+        <button type="button" onclick="location.href='signup'">회원가입</button>
     </form>
 
 </div>

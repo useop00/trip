@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <title>Maps and Places Autocomplete</title>
     <script>
         let map, marker, infowindow, service;
         let selectedPlaces = []; // 선택된 장소 배열
         let markers = []; // 지도에 표시된 마커 배열
+        let draggedPlaceIndex; // 드래그한 장소의 인덱스 저장
 
         async function init() {
             await customElements.whenDefined('gmp-map');
@@ -38,11 +39,24 @@
                 }
 
                 marker.position = place.location;
-                infowindow.setContent(`<strong>${place.displayName}</strong><br><span>${place.formattedAddress}</span>`);
+                infowindow.setContent(`
+                    <strong>${place.displayName}</strong><br>
+                    <span>${place.formattedAddress}</span><br>
+                    <button onclick="addPlace('${place.displayName}', ${place.location.lat()}, ${place.location.lng()})">+</button>
+                `);
                 infowindow.open(map.innerMap, marker);
 
                 searchNearbyPlaces(place.location, 'tourist_attraction');
             });
+        }
+
+        function addPlace(name, lat, lng) {
+            // 장소 추가 로직
+            if (!selectedPlaces.some(p => p.placeName === name)) {
+                selectedPlaces.push({ placeName: name, lat, lng });
+                updateSelectedPlaces();
+                updateMarkers();
+            }
         }
 
         function searchNearbyPlaces(location, placeType) {
@@ -80,7 +94,11 @@
 
                         li.addEventListener('click', () => {
                             marker.position = result.geometry.location;
-                            infowindow.setContent(`<strong>${result.name}</strong><br><span>${result.vicinity}</span>`);
+                            infowindow.setContent(`
+                                <strong>${result.name}</strong><br>
+                                <span>${result.vicinity}</span><br>
+                                <button onclick="addPlace('${result.name}', ${result.geometry.location.lat()}, ${result.geometry.location.lng()})">+</button>
+                            `);
                             infowindow.open(map.innerMap, marker);
                         });
                         list.appendChild(li);
@@ -111,10 +129,36 @@
             selectedPlaces.forEach((place, index) => {
                 const div = document.createElement('div');
                 div.classList.add('selected-place');
+                div.setAttribute('draggable', true); // 드래그 가능하게 설정
+                div.setAttribute('data-index', index); // 인덱스 저장
+
                 div.innerHTML = `
                     <span>${index + 1}. ${place.placeName}</span>
                     <button class="remove-btn" data-index="${index}">X</button>
                 `;
+
+                // 드래그 시작 이벤트
+                div.addEventListener('dragstart', (e) => {
+                    draggedPlaceIndex = e.target.getAttribute('data-index');
+                });
+
+                // 드래그한 항목을 다른 항목 위에 놓을 때
+                div.addEventListener('dragover', (e) => {
+                    e.preventDefault(); // 기본 동작 방지 (drop 가능하게 하기 위해)
+                });
+
+                // 드래그 완료 후 드롭한 항목
+                div.addEventListener('drop', (e) => {
+                    const dropIndex = e.target.closest('.selected-place').getAttribute('data-index');
+                    if (draggedPlaceIndex !== dropIndex) {
+                        // 배열에서 장소의 순서를 변경
+                        const draggedPlace = selectedPlaces.splice(draggedPlaceIndex, 1)[0];
+                        selectedPlaces.splice(dropIndex, 0, draggedPlace);
+                        updateSelectedPlaces(); // 업데이트된 순서로 다시 그리기
+                        updateMarkers(); // 마커도 업데이트
+                    }
+                });
+
                 selectedPlacesPanel.appendChild(div);
             });
 
@@ -158,6 +202,10 @@
         }
 
         function changePlaceType(type) {
+            const buttons = document.querySelectorAll('.category-buttons button');
+            buttons.forEach(button => button.classList.remove('active')); // 모든 버튼의 'active' 클래스 제거
+            event.target.classList.add('active'); // 클릭한 버튼에 'active' 클래스 추가
+
             const place = marker.position;
             if (!place) return;
             searchNearbyPlaces(place, type);
@@ -330,7 +378,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             margin-bottom: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .selected-place:hover {
+            transform: scale(1.02);
         }
     </style>
 </head>
@@ -341,7 +398,7 @@
     </div>
 
     <div class="category-buttons">
-        <button class="active" onclick="changePlaceType('tourist_attraction')">추천 장소</button>
+        <button class="active" onclick="changePlaceType('lodging')">숙소</button>
         <button onclick="changePlaceType('tourist_attraction')">관광지</button>
         <button onclick="changePlaceType('restaurant')">식당</button>
         <button onclick="changePlaceType('cafe')">카페</button>
@@ -359,7 +416,7 @@
 
 <gmpx-api-loader key="AIzaSyBSrmV4v2IuA2pXwJ6x7IBg80zUEZAxMUc" solution-channel="GMP_GE_mapsandplacesautocomplete_v1">
 </gmpx-api-loader>
-<gmp-map center="40.749933,-73.98633" zoom="13" map-id="DEMO_MAP_ID">
+<gmp-map center="35.8714354,128.601445" zoom="17" map-id="DEMO_MAP_ID">
     <gmp-advanced-marker></gmp-advanced-marker>
 </gmp-map>
 </body>
