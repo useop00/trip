@@ -19,7 +19,6 @@ public class MainController {
                         @RequestParam("password") String password,
                         Model model) {
 
-        // 아이디와 비밀번호 검증 로직 (실제 로직으로 교체 필요)
         if (userService.validateUser(username, password)) {
             return "redirect:/map"; // 로그인 성공 시 map 페이지로 이동
         } else {
